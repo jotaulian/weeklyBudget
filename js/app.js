@@ -21,8 +21,19 @@ class Presupuesto {
 
     nuevoGasto(gasto){
         this.gastos = [...this.gastos, gasto]; 
+        this.calcularRestante();
     }
 
+    calcularRestante(){
+        //Reduce toma dos parametros, el primero es el total y el segundo el objeto actual:
+        const gastado = this.gastos.reduce( (total, gasto) => total + gasto.cantidad, 0 );
+        this.restante = this.presupuesto - gastado;
+    }
+    eliminarGasto(id){
+        this.gastos = this.gastos.filter( gasto => gasto.id !== id);
+        console.log(this.gastos);
+        this.calcularRestante();
+    }
 }
 
 class UI{
@@ -55,7 +66,9 @@ class UI{
         }, 3000);
     }
 
-    agregarGastoListado(gastos){
+    mostrarGastos(gastos){
+        //Borramos items previos antes de agregar todos.
+        this.limpiarHTML();
 
         //Tomamos el array de objetos 'gastos' y hacemos lo siguiente:
         gastos.forEach(gasto => {
@@ -71,12 +84,44 @@ class UI{
             //Botón para eliminar el gasto
             const btnBorrar = document.createElement('button');
             btnBorrar.classList.add('btn', 'btn-danger', 'borrar-gasto');
-            btnBorrar.textContent = 'X';
+            btnBorrar.innerHTML = 'Borrar &times';
+            btnBorrar.onclick = () =>{
+                eliminarGasto(id);
+            }
             item.appendChild(btnBorrar);
 
             // Agregamos el nuevo item al HTML:
             gastoListado.appendChild(item);
         });
+    }
+
+    limpiarHTML(){
+        while(gastoListado.firstChild){
+            gastoListado.removeChild(gastoListado.firstChild);
+        }
+    }
+
+    actualizarRestante(restante){
+        document.querySelector('#restante').textContent = restante;
+
+    }
+
+    //El siguiente método modifica el color de fondo del restante, de acuerdo al monto:
+    comprobarPresupuesto(presupuestoObj){
+        const { presupuesto, restante } = presupuestoObj;
+        const restanteDiv = document.querySelector('.restante');
+        
+        //Comprobar 25%:
+        if ( (presupuesto * 0.25) > restante ){
+            restanteDiv.classList.remove('alert-success', 'alert-warning');
+            restanteDiv.classList.add('alert-danger');
+        }else if ( (presupuesto * 0.5) > restante ){ //Comprobamos el 50%
+            restanteDiv.classList.remove('alert-success', 'alert-danger');
+            restanteDiv.classList.add('alert-warning');
+        }else{
+            restanteDiv.classList.remove('alert-danger', 'alert-warning');
+            restanteDiv.classList.add('alert-success');
+        }
     }
 }
 
@@ -124,10 +169,25 @@ function agregarGasto(e){
 
     
     // Agregamos el gasto
-    const {gastos} = presupuesto;
-    ui.agregarGastoListado(gastos);
+    const {gastos, restante} = presupuesto;
+    ui.mostrarGastos(gastos);
     
+    ui.actualizarRestante(restante);
+
+    ui.comprobarPresupuesto(presupuesto);
+
     //Reiniciamos el formulario:
     formulario.reset();
     
+}
+
+function eliminarGasto(id){
+    //Eliminamos el gasto desde el array en el objeto:
+    presupuesto.eliminarGasto(id);
+    const { gastos, restante } = presupuesto;
+    /*Volvemos a mostrar los gastos en el HTML, 
+    esta vez no aparecera el gasto que acabamos de eliminar: */
+    ui.mostrarGastos(gastos);
+    ui.actualizarRestante(restante);
+    ui.comprobarPresupuesto(presupuesto);
 }
